@@ -37,17 +37,18 @@ def retrive_teams(wb):
         player2 = ws.cell(row, 5).value
         attend2 = ws.cell(row, 6).value
         if rank and team and player1 and player2:
-            if not teams.get(team):
-                teams[team] = {}
+            if attend1 == -1 or attend2 == -1:
+                continue
+            teams[team] = {}
+            if attend1 == 1 and attend2 == 1:
+                teams[team]['ready'] = 1
+            else:
+                teams[team]['ready'] = 0
             teams[team]['players'] = f'{player1} & {player2}'
             teams[team]['crt5_played'] = False
             teams[team]['score_rows'] = []
             teams[team]['rounds'] = []
             teams[team]['wait_time'] = 1
-            if attend1 and attend2:
-                teams[team]['ready'] = 1
-            else:
-                teams[team]['ready'] = 0
 
             if rank == 'wb':
                 teams[team]['group'] = 'Women & Boys'
@@ -95,7 +96,7 @@ def choose_matches(teams, quali_matches):
         entry = [left, right, teams[left]['ready'], teams[right]['ready'], teams[left]['wait_time'], teams[right]['wait_time']]
         available_rounds.append(entry)
 
-    inx = 0
+    inx = MENS_COURT_COUNT - 1
     if available_rounds:
         available_rounds.sort(key=lambda k: (k[2]+k[3], k[4]+k[5], k[4], k[5]), reverse=True)
         for i in range(len(available_rounds)):
@@ -118,11 +119,11 @@ def choose_matches(teams, quali_matches):
                     rounds[CRT5_COURT_INX] = [left, right]
                     selected_teams.append(left)
                     selected_teams.append(right)
-                elif (inx < MENS_COURT_COUNT):
+                elif (inx >= 0):
                     rounds[inx] = [left, right]
                     selected_teams.append(left)
                     selected_teams.append(right)
-                    inx += 1
+                    inx -= 1
 
     return rounds
 
@@ -177,7 +178,7 @@ def update_schedule(wb, teams, quali_rounds):
 
     row = ws.max_row + 4
     for col in range(3, len(quali_rounds) + 3):
-        ws.cell(row, col, f'Match - {col-2}')
+        ws.cell(row, col, f'Round - {col-2}')
 
     row = ws.max_row + 1
     for team in teams:
@@ -199,6 +200,8 @@ def update_score_sheet(wb, groups, teams, quali_rounds):
 
     for seq, rounds in enumerate(quali_rounds):
         ws.append([])
+        row += 1
+        ws.append([f'Round - {seq+1}'])
         row += 1
         for match in rounds:
             row_entries = ["" for x in title]
@@ -255,7 +258,7 @@ if __name__ == "__main__":
         exit(1)
 
     excel_file = sys.argv[1]
-    wb = openpyxl.load_workbook(filename=excel_file, data_only=True)
+    wb = openpyxl.load_workbook(filename=excel_file)
     teams, groups, quali_matches = retrive_teams(wb)
     quali_rounds = []
     while (True):
