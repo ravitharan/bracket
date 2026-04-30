@@ -4,7 +4,7 @@ import sys
 import openpyxl
 from itertools import combinations
 import random
-import copy
+import argparse
 
 ATTENDANCE_SHEET = "attendance"
 
@@ -27,9 +27,25 @@ MAX_CRT5_PLAY_COUNT = 1
 MAX_LATE_VALUE = 1000
 ABSENT_VALUE = 2000
 
-ROUND1_LATE_TH = 2
-ROUND2_LATE_TH = 15
+ROUND1_LATE_TH = 10
+ROUND2_LATE_TH = 30
 MAX_SELECTION_RUN = 10000
+
+def parse_argument():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("xlsx_file",
+            help="xlsx file with attendance and other place holder sheets")
+    parser.add_argument("-c",
+            "--run_count",
+            type=int,
+            default=MAX_SELECTION_RUN,
+            help="All first \"a\" rounds to have successive turns for teams")
+    parser.add_argument("-a",
+            "--allow_successive",
+            type=int,
+            default=2,
+            help="All first \"a\" rounds to have successive turns for teams")
+    return parser.parse_args()
 
 def retrive_teams(wb):
     ws = wb[ATTENDANCE_SHEET]
@@ -102,7 +118,7 @@ def retrive_teams(wb):
 
     return teams, groups
 
-def choose_matches(round_count, teams, quali_matches):
+def choose_matches(allow_successive, round_count, teams, quali_matches):
     rounds = [None for i in range(COURTS_COUNT)]
     available_rounds = []
     selected_teams = []
@@ -126,10 +142,10 @@ def choose_matches(round_count, teams, quali_matches):
             if left in selected_teams or right in selected_teams:
                 continue
 
-            if available_rounds[i][3] == 0:
+            if teams[left]['ready'] == ABSENT_VALUE or teams[right]['ready'] == ABSENT_VALUE:
                 continue
 
-            if teams[left]['ready'] == ABSENT_VALUE or teams[right]['ready'] == ABSENT_VALUE:
+            if not allow_successive and available_rounds[i][3] == 0:
                 continue
 
             if teams[left]['children'] and teams[right]['children']:
@@ -196,10 +212,8 @@ def update_schedule(wb, teams, quali_rounds):
     ws.append(schedule_row)
 
     for seq, rounds in enumerate(quali_rounds):
-        schedule_row = []
+        schedule_row = [""]
         for court, match in enumerate(rounds):
-            if court == 0:
-                schedule_row.append("")
             if match:
                 left = match[0]
                 right = match[1]
@@ -214,7 +228,9 @@ def update_schedule(wb, teams, quali_rounds):
                 schedule_row.append("")
         ws.append(schedule_row)
 
-    row = ws.max_row + 4
+    INDIVIDUAL_TEAM_TABLE_ROW = 16
+
+    row = INDIVIDUAL_TEAM_TABLE_ROW
     for col in range(3, len(quali_rounds) + 3):
         ws.cell(row, col, f'Round - {col-2}')
 
@@ -227,6 +243,8 @@ def update_schedule(wb, teams, quali_rounds):
             ws.cell(row, 2+seq, f'Court - {court}')
         row += 1
 
+    for col in range(3, len(quali_rounds) + 3):
+        ws.cell(row, col, f'Round - {col-2}')
 
 
 def update_score_sheet(wb, groups, teams, quali_rounds):
@@ -298,7 +316,7 @@ def update_score_sheet(wb, groups, teams, quali_rounds):
 
     return
 
-def run_quali_rounds(groups, teams):
+def run_quali_rounds(successive_rounds, groups, teams):
 
     quali_matches = []
 
@@ -318,7 +336,11 @@ def run_quali_rounds(groups, teams):
     quali_rounds = []
     round_count = 1
     while (True):
-        rounds = choose_matches(round_count, teams, quali_matches)
+        if round_count <= successive_rounds:
+            allow_successive = True
+        else:
+            allow_successive = False
+        rounds = choose_matches(allow_successive, round_count, teams, quali_matches)
         if not quali_matches:
             break
         update_chosen_teams(teams, quali_matches, rounds)
@@ -345,11 +367,11 @@ def run_quali_rounds(groups, teams):
     return round_count, roun1_violation, roun2_violation, quali_rounds
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print(f'Argument error\nUsage: {sys.argv[0]} <excel_file>')
-        exit(1)
 
-    excel_file = sys.argv[1]
+    args =  parse_argument()
+
+    excel_file = args.xlsx_file
+
     wb = openpyxl.load_workbook(filename=excel_file)
     teams, groups = retrive_teams(wb)
 
@@ -359,8 +381,8 @@ if __name__ == "__main__":
     best_rounds = None
     best_rounds = None
 
-    for run in range(MAX_SELECTION_RUN):
-        round_count, roun1_violation, roun2_violation, quali_rounds = run_quali_rounds(groups, teams)
+    for run in range(args.run_count):
+        round_count, roun1_violation, roun2_violation, quali_rounds = run_quali_rounds(args.allow_successive, groups, teams)
         #print(f'round_count {round_count}, roun1_violation {len(roun1_violation)}, roun2_violation {len(roun2_violation)}')
         if round_count > best_round_count:
             continue

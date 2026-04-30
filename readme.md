@@ -1,7 +1,7 @@
 Usage of Excel sheet for scheduling and scoring are as follows,
 
 1) Register everyone's attendance in the sheet "attendance" as '1'. If any
-player inform late, enter their ETA in minutes instead of '1'. If any player is
+player inform late, enter their ETA in minutes, instead of '1'. If any player is
 absent, mark their attendance as '0'.
 
 2) Once enough teams have arrived, run python script. Python script fill sheets
@@ -19,8 +19,7 @@ with column 'A' entries of 'quali_results'.
 points and score.
 
 7) Once sorted in step 6), correct player list will be displayed in sheet
-'knockout_score'. Please note that absent team need to be removed manually in
-sheet 'knockout_score'.
+'knockout_score'.
 
 8) Complete 'knockout_score' sheet manually.
 
