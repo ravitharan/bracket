@@ -286,12 +286,13 @@ def update_score_sheet(wb, groups, teams, quali_rounds):
 
     for group in groups:
         ws.append([teams[group[0]]['group']])
-        row_entries = ["" for i in range(7)]
         for team in group:
-            row_entries[0] = teams[team]['players']
-            row_entries[1] = team
-            row_entries[2] = teams[team]['points_sum_eqn']
-            row_entries[6] = teams[team]['score_sum_eqn']
+            row_entries = ["" for i in range(7)]
+            if teams[team]['ready'] != ABSENT_VALUE:
+                row_entries[0] = teams[team]['players']
+                row_entries[1] = team
+                row_entries[2] = teams[team]['points_sum_eqn']
+                row_entries[6] = teams[team]['score_sum_eqn']
             ws.append(row_entries)
         ws.append([])
 
