@@ -198,18 +198,26 @@ def update_chosen_teams(teams, quali_matches, rounds):
         if team not in selected_teams:
             teams[team]['wait_time'] += 1
 
+def update_row(ws, row, iterable):
+   for cell_row in ws.iter_rows(min_row=row, max_col=len(iterable), max_row=row):
+       for i, cell in enumerate(cell_row):
+           cell.value = iterable[i]
 
 def update_schedule(wb, teams, quali_rounds):
 
     ws = wb[SCHEDULE_SHEET]
-    ws.delete_rows(1, ws.max_row)
+    for row in range(1, ws.max_row):
+        for col in range(1, ws.max_column):
+            ws.cell(row, col).value = None
 
+    row = 1
     schedule_row = [""]
     for i in range(COURTS_COUNT):
         schedule_row.append(f'Court - {i+1}')
         schedule_row.append("")
         schedule_row.append("")
-    ws.append(schedule_row)
+    update_row(ws, row, schedule_row)
+    row += 1
 
     for seq, rounds in enumerate(quali_rounds):
         schedule_row = [""]
@@ -226,7 +234,8 @@ def update_schedule(wb, teams, quali_rounds):
                 schedule_row.append("")
                 schedule_row.append("")
                 schedule_row.append("")
-        ws.append(schedule_row)
+        update_row(ws, row, schedule_row)
+        row += 1
 
     INDIVIDUAL_TEAM_TABLE_ROW = 16
 
@@ -234,7 +243,7 @@ def update_schedule(wb, teams, quali_rounds):
     for col in range(3, len(quali_rounds) + 3):
         ws.cell(row, col, f'Round - {col-2}')
 
-    row = ws.max_row + 1
+    row += 1
     for team in teams:
         ws.cell(row, 1, teams[team]['players'])
         ws.cell(row, 2, team)
