@@ -31,6 +31,11 @@ ROUND1_LATE_TH = 10
 ROUND2_LATE_TH = 30
 MAX_SELECTION_RUN = 10000
 
+GROUPA_RANKS = [1, 5,  9, 13, 17]
+GROUPB_RANKS = [2, 6, 10, 14, 18]
+GROUPC_RANKS = [3, 7, 11, 15, 19]
+GROUPD_RANKS = [4, 8, 12, 16, 20]
+
 def parse_argument():
     parser = argparse.ArgumentParser()
     parser.add_argument("xlsx_file",
@@ -105,15 +110,17 @@ def retrive_teams(wb):
 
     team_ranks.sort(key=lambda k: k[0])
     for [rank, team] in team_ranks:
-        rank -= 1
-        groups[rank % 4].append(team)
-        if (rank % 4) == 0:
+        if rank in GROUPA_RANKS:
+            groups[0].append(team)
             teams[team]['group'] = 'Group A'
-        elif (rank % 4) == 1:
+        elif rank in GROUPB_RANKS:
+            groups[1].append(team)
             teams[team]['group'] = 'Group B'
-        elif (rank % 4) == 2:
+        elif rank in GROUPC_RANKS:
+            groups[2].append(team)
             teams[team]['group'] = 'Group C'
-        elif (rank % 4) == 3:
+        elif rank in GROUPD_RANKS:
+            groups[3].append(team)
             teams[team]['group'] = 'Group D'
 
     return teams, groups
