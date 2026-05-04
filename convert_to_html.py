@@ -3,8 +3,9 @@
 from bs4 import BeautifulSoup
 import sys
 import subprocess
+import datetime
 
-SHEETS = [ "quali_schedule", "quali_score", "knockout_score" ]
+SHEETS = [ "quali_schedule", "quali_score", "quali_results", "knockout_score" ]
 
 if len(sys.argv) != 2:
     print(f'Argument error\n  Usage: {sys.argv[0]} <xlsx_file>')
@@ -18,6 +19,9 @@ if results.returncode:
     print(results.stdout.decode())
     print(results.stderr.decode())
     exit(1)
+
+now = datetime.datetime.now()
+update_time = now.strftime('%H:%M')
 
 for sheet in SHEETS:
 
@@ -43,7 +47,7 @@ for sheet in SHEETS:
                 table.decompose()
             else:
                 h1 = soup.find('h1')
-                h1.string = sheet
+                h1.string = f'{sheet} at {update_time}'
 
         file_out = f'{sheet}.html'
 

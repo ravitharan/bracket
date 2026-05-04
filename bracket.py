@@ -18,23 +18,22 @@ LEFT_POINTS_COL = 'D'
 RIGHT_POINTS_COL = 'F'
 RIGHT_SCORE_COL = 'G'
 
-COURTS_COUNT = 5
-MENS_COURT_COUNT = 3
-CHILD_COURT_INX = MENS_COURT_COUNT
-CRT5_COURT_INX = COURTS_COUNT - 1
-MAX_CRT5_PLAY_COUNT = 1
 
 MAX_LATE_VALUE = 1000
 ABSENT_VALUE = 2000
 
 ROUND1_LATE_TH = 10
 ROUND2_LATE_TH = 30
-MAX_SELECTION_RUN = 10000
+MAX_SELECTION_RUN = 1000
 
-GROUPA_RANKS = [2, 7, 11, 13, 18]
-GROUPB_RANKS = [4, 6, 12, 16, 20]
-GROUPC_RANKS = [3, 8,  9, 15, 17]
-GROUPD_RANKS = [1, 5, 10, 14, 19]
+GROUPS = ["Girls", "Group A", "Group B", "Group C", "Group D", "Women & Boys"]
+
+COURTS_COUNT = 5
+COURT_ALLOCATIONS = {1: ["Group A"],
+                     2: ["Group B"],
+                     3: ["Group C"],
+                     4: ["Group D"],
+                     5: ["Girls", "Women & Boys"]}
 
 def parse_argument():
     parser = argparse.ArgumentParser()
@@ -48,24 +47,26 @@ def parse_argument():
     parser.add_argument("-a",
             "--allow_successive",
             type=int,
-            default=2,
+            default=0,
             help="All first \"a\" rounds to have successive turns for teams")
     return parser.parse_args()
 
 def retrive_teams(wb):
     ws = wb[ATTENDANCE_SHEET]
     teams = {}
-    groups = [[] for i in range(6)]
-    team_ranks = []
+    groups = {}
+
+    for group in GROUPS:
+        groups[group] = []
 
     for row in range(2, ws.max_row+1):
-        rank = ws.cell(row, 1).value
+        group = ws.cell(row, 1).value
         team = ws.cell(row, 2).value
         player1 = ws.cell(row, 3).value
         attend1 = ws.cell(row, 4).value
         player2 = ws.cell(row, 5).value
         attend2 = ws.cell(row, 6).value
-        if rank and team and player1 and player2:
+        if group and team and player1 and player2:
             teams[team] = {}
             teams[team]['rounds'] = []
             if attend1 != None:
@@ -93,35 +94,12 @@ def retrive_teams(wb):
 
             teams[team]['players'] = f'{player1} & {player2}'
 
-            if rank == 'wb':
-                teams[team]['group'] = 'Women & Boys'
-                teams[team]['children'] = True
-                groups[4].append(team)
-            elif rank == 'g':
-                teams[team]['group'] = 'Girls'
-                teams[team]['children'] = True
-                groups[5].append(team)
-            elif isinstance(rank, float) or isinstance(rank, int):
-                team_ranks.append([int(rank), team])
-                teams[team]['children'] = False
-            else:
-                print(f'Error in sheet {ATTENDANCE_SHEET} at row {row}, unknown rank "{rank}"')
+            if group not in GROUPS:
+                print(f'Error in sheet {ATTENDANCE_SHEET} at row {row}, unknown group "{group}"')
                 exit(1)
 
-    team_ranks.sort(key=lambda k: k[0])
-    for [rank, team] in team_ranks:
-        if rank in GROUPA_RANKS:
-            groups[0].append(team)
-            teams[team]['group'] = 'Group A'
-        elif rank in GROUPB_RANKS:
-            groups[1].append(team)
-            teams[team]['group'] = 'Group B'
-        elif rank in GROUPC_RANKS:
-            groups[2].append(team)
-            teams[team]['group'] = 'Group C'
-        elif rank in GROUPD_RANKS:
-            groups[3].append(team)
-            teams[team]['group'] = 'Group D'
+            groups[group].append(team)
+            teams[team]['group'] = group
 
     return teams, groups
 
@@ -137,10 +115,9 @@ def choose_matches(allow_successive, round_count, teams, quali_matches):
         entry = [left, right, highest_ready, lowest_wait_time]
         available_rounds.append(entry)
 
-    #print(f'\nRound count {round_count}')
-    inx = MENS_COURT_COUNT - 1
-    if available_rounds:
-        available_rounds.sort(key=lambda k: (-1 * k[2], lowest_wait_time), reverse=True)
+    available_rounds.sort(key=lambda k: (-1 * k[2], lowest_wait_time), reverse=True)
+
+    for court in range(1, COURTS_COUNT+1):
         for i in range(len(available_rounds)):
             left = available_rounds[i][0]
             right = available_rounds[i][1]
@@ -155,46 +132,21 @@ def choose_matches(allow_successive, round_count, teams, quali_matches):
             if not allow_successive and available_rounds[i][3] == 0:
                 continue
 
-            if teams[left]['children'] and teams[right]['children']:
-                if not rounds[CHILD_COURT_INX]:
-                    rounds[CHILD_COURT_INX] = [left, right]
-                    selected_teams.append(left)
-                    selected_teams.append(right)
-                    choosen_count += 1
-                    #print(f'Choosen {i} {left} {right}')
-            else:
-                if (inx >= 0):
-                    rounds[inx] = [left, right]
-                    selected_teams.append(left)
-                    selected_teams.append(right)
-                    inx -= 1
-                    choosen_count += 1
-                    #print(f'Choosen {i} {left} {right}')
-                elif not rounds[CRT5_COURT_INX] and \
-                    (teams[left]['crt5_played'] < MAX_CRT5_PLAY_COUNT) and (teams[right]['crt5_played'] < MAX_CRT5_PLAY_COUNT):
-                    rounds[CRT5_COURT_INX] = [left, right]
-                    selected_teams.append(left)
-                    selected_teams.append(right)
-                    choosen_count += 1
-                    #print(f'Choosen {i} {left} {right}')
-
-            if choosen_count == COURTS_COUNT:
+            if teams[left]['group'] in COURT_ALLOCATIONS[court]:
+                rounds[court-1] = [left, right]
+                selected_teams.append(left)
+                selected_teams.append(right)
                 break
-
 
     return rounds
 
 def update_chosen_teams(teams, quali_matches, rounds):
 
     selected_teams = []
-    for court, match in enumerate(rounds):
+    for match in rounds:
         if match:
             teams[match[0]]['wait_time'] = 0
             teams[match[1]]['wait_time'] = 0
-
-            if court == CRT5_COURT_INX:
-                teams[match[0]]['crt5_played'] += 1
-                teams[match[1]]['crt5_played'] += 1
 
             selected_teams.append(match[0])
             selected_teams.append(match[1])
@@ -213,8 +165,8 @@ def update_row(ws, row, iterable):
 def update_schedule(wb, teams, quali_rounds):
 
     ws = wb[SCHEDULE_SHEET]
-    for row in range(1, ws.max_row):
-        for col in range(1, ws.max_column):
+    for row in range(1, ws.max_row+1):
+        for col in range(1, ws.max_column+1):
             ws.cell(row, col).value = None
 
     row = 1
@@ -319,8 +271,8 @@ def update_score_sheet(wb, groups, teams, quali_rounds):
         teams[team]['score_sum_eqn'] = score_sum_eqn
 
     for group in groups:
-        ws.append([teams[group[0]]['group']])
-        for team in group:
+        ws.append([group])
+        for team in groups[group]:
             row_entries = ["" for i in range(7)]
             if teams[team]['ready'] != ABSENT_VALUE:
                 row_entries[0] = teams[team]['players']
@@ -337,11 +289,10 @@ def run_quali_rounds(successive_rounds, groups, teams):
     quali_matches = []
 
     for team in teams:
-        teams[team]['crt5_played'] = 0
         teams[team]['wait_time'] = 1
 
     for group in groups:
-        matches = combinations(group, 2)
+        matches = combinations(groups[group], 2)
         for match in matches:
             (left, right) = match
             if teams[left]['ready'] != ABSENT_VALUE and teams[right]['ready'] != ABSENT_VALUE:
@@ -350,18 +301,25 @@ def run_quali_rounds(successive_rounds, groups, teams):
     random.shuffle(quali_matches)
 
     quali_rounds = []
-    round_count = 1
-    while (True):
+    round_count = 0
+    while (quali_matches):
+        round_count += 1
         if round_count <= successive_rounds:
             allow_successive = True
         else:
             allow_successive = False
         rounds = choose_matches(allow_successive, round_count, teams, quali_matches)
-        if not quali_matches:
-            break
         update_chosen_teams(teams, quali_matches, rounds)
         quali_rounds.append(rounds)
-        round_count += 1
+
+    crt_rnd_cnts = [0 for i in range(COURTS_COUNT)]
+
+    for n, rounds in enumerate(reversed(quali_rounds)):
+        for i in range(COURTS_COUNT):
+            if not crt_rnd_cnts[i] and rounds[i]:
+                crt_rnd_cnts[i] = round_count - n
+
+    total_round_count = sum(crt_rnd_cnts)
 
     roun1_violation = []
     roun2_violation = []
@@ -380,7 +338,7 @@ def run_quali_rounds(successive_rounds, groups, teams):
                         roun2_violation.append(left)
                     if teams[right]['ready'] > ROUND2_LATE_TH:
                         roun2_violation.append(right)
-    return round_count, roun1_violation, roun2_violation, quali_rounds
+    return total_round_count, roun1_violation, roun2_violation, quali_rounds
 
 if __name__ == "__main__":
 
@@ -422,7 +380,7 @@ if __name__ == "__main__":
                     best_round1_violations = roun1_violation
                     best_round2_violations = roun2_violation
 
-    print(f'Total rounds {best_round_count - 1}')
+    print(f'Total rounds {best_round_count}')
     if best_round1_violations:
         print(f'Round1 ready violations:')
         for team in best_round1_violations:
