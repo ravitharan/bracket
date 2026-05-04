@@ -31,10 +31,10 @@ ROUND1_LATE_TH = 10
 ROUND2_LATE_TH = 30
 MAX_SELECTION_RUN = 10000
 
-GROUPA_RANKS = [1, 5,  9, 13, 17]
-GROUPB_RANKS = [2, 6, 10, 14, 18]
-GROUPC_RANKS = [3, 7, 11, 15, 19]
-GROUPD_RANKS = [4, 8, 12, 16, 20]
+GROUPA_RANKS = [2, 7, 11, 13, 18]
+GROUPB_RANKS = [4, 6, 12, 16, 20]
+GROUPC_RANKS = [3, 8,  9, 15, 17]
+GROUPD_RANKS = [1, 5, 10, 14, 19]
 
 def parse_argument():
     parser = argparse.ArgumentParser()
