@@ -395,9 +395,9 @@ if __name__ == "__main__":
             if match:
                 left = match[0]
                 right = match[1]
-                print(f'({left:6} {right:6}), ', end='')
+                print(f'({left:8} {right:8}), ', end='')
             else:
-                print(f'({"":6} {"":6}), ', end='')
+                print(f'({"":8} {"":8}), ', end='')
         print()
 
 

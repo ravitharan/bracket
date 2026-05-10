@@ -5,7 +5,7 @@ import sys
 import subprocess
 import datetime
 
-SHEETS = [ "quali_schedule", "quali_score", "quali_results", "knockout_score" ]
+SHEETS = [ "index", "quali_schedule", "quali_score", "quali_results", "knockout_score", "final_results" ]
 
 if len(sys.argv) != 2:
     print(f'Argument error\n  Usage: {sys.argv[0]} <xlsx_file>')

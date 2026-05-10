@@ -11,31 +11,33 @@ absent, mark their attendance as '0'.
 
 4) Every match results needs to be entered in the sheet "quali_score".
 
-5) Once all qualification rounds are complete, copy group quali results at the
+5) You may share quali_score to the teams to see the progress.
+
+6) Once all qualification rounds are complete, copy group quali results at the
 end of 'quali_score' sheet into 'quali_results' sheet by values only and aligned
 with column 'A' entries of 'quali_results'.
 
-6) In 'quali_results' sheet, every group's results need to be sorted according to
+7) In 'quali_results' sheet, every group's results need to be sorted according to
 points and score.
 
-7) Once sorted in step 6), correct player list will be displayed in sheet
+8) Once sorted in step 7), correct player list will be displayed in sheet
 'knockout_score'.
 
-8) Complete 'knockout_score' sheet manually.
+9) Fill every knockout score in 'knockout_score' sheet.
+
+10) You may share knockout_score to the teams to see the progress.
+
+11) Once all knockout_score are filled, sheet 'final_results' show the results.
 
 
 Python script schedule the match as follows,
 1) It will attempt to fill first two rounds with attendance registered teams.
 
-2) No match is scheduled successively for a team.
+2) No match is scheduled successively for a team, unless specified in the arguments.
 
-3) All the Boys & Girls matches are on Court 4.
+3) Matches are chosen randomly.
 
-4) Court 5 will be used only only once for a team.
-
-5) Matches are chosen randomly.
-
-6) There won't be any schedule for absent teams.
+4) There won't be any schedule for absent teams.
 
 Useful commands
 libreoffice --invisible --convert-to html ./bracket.xlsx --outdir /tmp/aa
